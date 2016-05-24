@@ -6,11 +6,14 @@ import SocketServer
 import logging
 import cgi
 import sys
+import base64
+import json
 from Crypto import Random
 from Crypto.Cipher import AES
-import base64
 from Crypto.Hash import SHA512
 
+
+defaults = json.loads(open('config.json').read())
 
 if len(sys.argv) > 2:
     PORT = int(sys.argv[2])
@@ -19,7 +22,7 @@ elif len(sys.argv) > 1:
     PORT = int(sys.argv[1])
     I = ""
 else:
-    PORT = 8083
+    PORT = defaults["PORT"]
     I = ""
 
 
@@ -54,8 +57,8 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         enc_data = base64.b64decode(enc_data)
         BS = 16 #Block Size of AES
         unpad = lambda s : s[0:-ord(s[-1])]
-        salt = "abcdefgh" #Salt Value
-        key = "0123456789abcdef" #Encryption Key
+        salt = defaults["SALT"] #Salt Value
+        key = defaults["KEY"] #Encryption Key
         iv = enc_data[:16]
         cipher = AES.new(key, AES.MODE_CBC, iv)
         plaintext = unpad(cipher.decrypt(enc_data[16:]))

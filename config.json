@@ -1,0 +1,5 @@
+{
+"PORT" : 8083,
+"SALT" : "abcdefgh01234",
+"KEY" : "0123456789abcdef"
+}
