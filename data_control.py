@@ -11,6 +11,11 @@ import json
 from Crypto import Random
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA512
+from SocketServer import ThreadingMixIn
+from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+
+class ThreadingSimpleServer (ThreadingMixIn, HTTPServer):
+    pass
 
 
 defaults = json.loads(open('config.json').read())
@@ -49,38 +54,41 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
             logging.warning(item)
         logging.warning("\n")
         device_id = form.getvalue("device_id")
-        access_token = form.getvalue("access_token")
-        #hashed_msg = form.getvalue("hash") 
+        hashed_msg = form.getvalue("hash") 
         enc_data = form.getvalue("file")
         print "Received msg from the Data Collection Server: " + enc_data
         
-        '''
+        
         #Integrity Check Module
-        salt = defaults["SALT"] #Salt Value
+        #salt = defaults["SALT"] #Salt Value
+        enc_data = base64.b64decode(enc_data)
         message_hash = SHA512.new()
-        message_hash.update(enc_data+salt) '''
+        message_hash.update(enc_data)
+        message_hash = base64.b64encode(message_hash.digest())
+        hashed_msg =  hashed_msg.replace("\n", "")
+        print "\n\n\n" + hashed_msg + "\n\n\n" + message_hash
 
-        #if message_hash == hashed_msg:
+        if message_hash == hashed_msg:
         
         #Decryption Module
-        enc_data = base64.b64decode(enc_data)
-        BS = 16 #Block Size of AES
-        unpad = lambda s : s[0:-ord(s[-1])]
-        key = defaults["KEY"] #Encryption Key
-        iv = enc_data[:16]
-        cipher = AES.new(key, AES.MODE_CBC, iv)
-        plaintext = unpad(cipher.decrypt(enc_data[16:]))
-        print "Decrypted msg: " + plaintext
-        print "**** " + "Device ID: " + device_id + " Access Token: " + access_token + " Data: " + plaintext + " ****"
-        SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
-        '''
+            #enc_data = base64.b64decode(enc_data)
+            BS = 16 #Block Size of AES
+            unpad = lambda s : s[0:-ord(s[-1])]
+            key = defaults["KEY"] #Encryption Key
+            iv = enc_data[:16]
+            cipher = AES.new(key, AES.MODE_CBC, iv)
+            plaintext = unpad(cipher.decrypt(enc_data[16:]))
+            print "Decrypted msg: " + plaintext
+            print "**** " + "Device ID: " + device_id  + " Data: " + plaintext + " ****"
+            SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
+        
         else:
             print "Status: Error | Integrity Check Failed!" 
-        '''
+        
 
 Handler = ServerHandler
 
-httpd = SocketServer.TCPServer(("", PORT), Handler)
+httpd = ThreadingSimpleServer(("", PORT), Handler)
 
 print "Serving at: http://%(interface)s:%(port)s" % dict(interface=I or "localhost", port=PORT)
 httpd.serve_forever()
