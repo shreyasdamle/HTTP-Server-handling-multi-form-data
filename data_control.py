@@ -50,14 +50,22 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         logging.warning("\n")
         device_id = form.getvalue("device_id")
         access_token = form.getvalue("access_token")
+        #hashed_msg = form.getvalue("hash") 
         enc_data = form.getvalue("file")
         print "Received msg from the Data Collection Server: " + enc_data
+        
+        '''
+        #Integrity Check Module
+        salt = defaults["SALT"] #Salt Value
+        message_hash = SHA512.new()
+        message_hash.update(enc_data+salt) '''
 
+        #if message_hash == hashed_msg:
+        
         #Decryption Module
         enc_data = base64.b64decode(enc_data)
         BS = 16 #Block Size of AES
         unpad = lambda s : s[0:-ord(s[-1])]
-        salt = defaults["SALT"] #Salt Value
         key = defaults["KEY"] #Encryption Key
         iv = enc_data[:16]
         cipher = AES.new(key, AES.MODE_CBC, iv)
@@ -65,6 +73,10 @@ class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         print "Decrypted msg: " + plaintext
         print "**** " + "Device ID: " + device_id + " Access Token: " + access_token + " Data: " + plaintext + " ****"
         SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
+        '''
+        else:
+            print "Status: Error | Integrity Check Failed!" 
+        '''
 
 Handler = ServerHandler
 
